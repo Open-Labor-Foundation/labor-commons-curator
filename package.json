@@ -1,5 +1,6 @@
 {
   "scripts": {
+    "build": "npm run generate:types",
     "generate:types": "ts-node build/generate-types.ts"
   },
   "devDependencies": {

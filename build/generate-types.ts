@@ -1,15 +1,8 @@
-import { generateTypes } from 'json-schema-to-typescript';
-import fs from 'fs';
-import path from 'path';
+import { compile } from 'json-schema-to-typescript';
+import { readFileSync, writeFileSync } from 'fs';
 
-const inputPath = 'src/schemas';
-const outputPath = 'src/types';
+const schema = JSON.parse(readFileSync('src/schema.json', 'utf8'));
 
-fs.readdirSync(inputPath).forEach(file => {
-  if (file.endsWith('.schema.json')) {
-    const schema = JSON.parse(fs.readFileSync(path.join(inputPath, file), 'utf8'));
-    const typeName = path.basename(file, '.schema.json').replace(/-/g, '_').toUpperCase() + '_TYPE';
-    const ts = generateTypes(schema, { bannerComment: '' });
-    fs.writeFileSync(path.join(outputPath, `${typeName}.ts`), ts);
-  }
-});
+compile(schema, 'GeneratedTypes')
+  .then(ts => writeFileSync('src/generated-types.ts', ts));
+console.log('Types generated');
