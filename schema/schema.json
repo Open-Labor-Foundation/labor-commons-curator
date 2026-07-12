@@ -1,12 +1,11 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Generated Types Schema",
+  "title": "Core Data Structure",
   "type": "object",
   "properties": {
-    "exampleField": {
-      "type": "string",
-      "description": "Example schema field"
-    }
+    "id": { "type": "string", "format": "uuid" },
+    "name": { "type": "string" },
+    "active": { "type": "boolean" }
   },
-  "required": ["exampleField"]
+  "required": ["id", "name"]
 }

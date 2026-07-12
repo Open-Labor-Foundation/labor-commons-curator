@@ -1,8 +1,10 @@
 {
   "scripts": {
-    "build:types": "json2ts --input schema/schema.json --output types/generated.d.ts"
+    "build:types": "json2ts --input schema/schema.json --output types/generated.d.ts",
+    "prepare": "npm run build:types"
   },
   "devDependencies": {
-    "json-schema-to-typescript": "^0.23.0"
+    "@apidevtools/json-schema-ref-parser": "^1.0.0",
+    "json-schema-to-typescript": "^4.6.5"
   }
 }
