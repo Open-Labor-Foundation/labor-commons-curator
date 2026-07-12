@@ -1,29 +1,22 @@
 import { generateTypes } from 'json-schema-to-typescript';
-import fs from 'fs';
-import path from 'path';
+import * as fs from 'fs';
+import * as path from 'path';
 
 async function main() {
-  const schemaPath = path.resolve(__dirname, '../schemas/api-schema.json');
-  const outputDir = path.resolve(__dirname, '../src/generated');
-
-  fs.mkdirSync(outputDir, { recursive: true });
-
+  const schemaPath = path.resolve(__dirname, '../src/schemas/example.schema.json');
+  const outputPath = path.resolve(__dirname, '../src/generated-types.ts');
+  
   const schema = JSON.parse(fs.readFileSync(schemaPath, 'utf-8'));
-  const ts = await generateTypes({
+  
+  const result = await generateTypes({
     schema,
-    bannerComment: '// THIS FILE IS AUTO-GENERATED - DO NOT EDIT',
     style: {
-      tsconfig: path.resolve(__dirname, '../tsconfig.json')
-    }
+      trailingComma: 'es5',
+      quote: 'single',
+    },
   });
-
-  fs.writeFileSync(
-    path.join(outputDir, 'api-types.ts'),
-    ts
-  );
+  
+  fs.writeFileSync(outputPath, result, 'utf-8');
 }
 
-main().catch(err => {
-  console.error('Type generation failed:', err);
-  process.exit(1);
-});
+main().catch(console.error);
