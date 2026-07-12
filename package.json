@@ -1,12 +1,8 @@
 {
-  "name": "schema-driven-project",
-  "version": "1.0.0",
   "scripts": {
-    "build": "tsc && generate-schemas",
-    "generate-schemas": "json2ts --input ./schemas/**/*.schema --output ./types/generated/ --namespace Generated"
+    "build:types": "json2ts --input schema/schema.json --output types/generated.d.ts"
   },
   "devDependencies": {
-    "json-schema-to-typescript": "^4.6.5",
-    "typescript": "^4.8.4"
+    "json-schema-to-typescript": "^0.23.0"
   }
 }
