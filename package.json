@@ -1,15 +1,12 @@
 {
-  "name": "autonomous-3-build-time-schema-pull-generated-types",
+  "name": "schema-driven-project",
   "version": "1.0.0",
   "scripts": {
-    "build": "tsc && node -r esbuild-register src/schemas/generated-types.config.ts",
-    "generate:types": "json2ts --input src/schema.json --output src/types/ && json2ts --input src/schemas/example.schema.json --output src/types/",
-    "validate:schema": "z-schema src/schema.json src/schemas/"
+    "build": "./build-schema.sh && tsc",
+    "postinstall": "npm run build"
   },
-  "dependencies": {
-    "@types/json-schema": "^7.0.15",
-    "json-schema-to-typescript": "^4.6.5",
-    "json-schema-ref-parser": "^3.3.1",
-    "z-schema": "^3.25.1"
+  "devDependencies": {
+    "json2ts": "^1.0.0",
+    "typescript": "^5.3.3"
   }
 }
