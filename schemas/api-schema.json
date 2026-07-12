@@ -1,0 +1,17 @@
+{
+  "title": "API Schema",
+  "description": "Generated types for API contracts",
+  "type": "object",
+  "properties": {
+    "user": {
+      "type": "object",
+      "properties": {
+        "id": {"type": "string"},
+        "name": {"type": "string"},
+        "email": {"type": "string"}
+      },
+      "required": ["id", "name"]
+    }
+  },
+  "required": ["user"]
+}
