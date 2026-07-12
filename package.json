@@ -2,11 +2,11 @@
   "name": "schema-driven-project",
   "version": "1.0.0",
   "scripts": {
-    "build": "./build-schema.sh && tsc",
-    "postinstall": "npm run build"
+    "build": "tsc && generate-schemas",
+    "generate-schemas": "json2ts --input ./schemas/**/*.schema --output ./types/generated/ --namespace Generated"
   },
   "devDependencies": {
-    "json2ts": "^1.0.0",
-    "typescript": "^5.3.3"
+    "json-schema-to-typescript": "^4.6.5",
+    "typescript": "^4.8.4"
   }
 }
