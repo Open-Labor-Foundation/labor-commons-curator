@@ -4,7 +4,8 @@ import * as os from 'os';
 import * as path from 'path';
 import { promisify } from 'util';
 import type { SpecialistManifestContract } from '../vendor/commons-crew-catalog';
-import type { ProviderStatus, MaterializationRecord } from '../vendor/commons-crew-core';
+import type { ProviderStatus } from '../vendor/commons-crew-core';
+import type { MaterializedContent } from './materialize';
 
 const execFileAsync = promisify(execFile);
 
@@ -18,7 +19,7 @@ const HARNESS_PATH = path.join(__dirname, 'materialize-harness.ts');
 
 interface HarnessResult {
   ok: boolean;
-  record?: MaterializationRecord;
+  materialized?: MaterializedContent;
   message?: string;
 }
 
@@ -79,11 +80,11 @@ async function listMaterializeTempDirs(): Promise<string[]> {
 }
 
 describe('materialize (real end-to-end, via tsx subprocess)', () => {
-  it('drives the real materials.create end to end and returns a genuine MaterializationRecord', async () => {
+  it('drives the real materials.create end to end and returns a genuine MaterializationRecord plus real generated content', async () => {
     const result = await runHarness({ manifest: makeValidManifest(), providerStatus: makeProviderStatus() });
 
     expect(result.ok).toBe(true);
-    const record = result.record!;
+    const { record, systemPrompt, instructions } = result.materialized!;
     expect(record.status).toBe('ready');
     expect(record.agentCatalogEntryId).toBe(
       'catalog/naics-overlays/curator-generated/payroll-coordination-specialist/spec.yaml'
@@ -92,13 +93,17 @@ describe('materialize (real end-to-end, via tsx subprocess)', () => {
     expect(record.validationChecks.some((check) => check.name === 'manifest.recorded' && check.ok)).toBe(true);
     expect(record.validationChecks.some((check) => check.name === 'generated.bundle' && check.ok)).toBe(true);
     expect(record.failureCode).toBeNull();
+    expect(typeof systemPrompt).toBe('string');
+    expect(systemPrompt).toContain('Payroll Coordination Specialist');
+    expect(systemPrompt).toContain('Owns payroll run execution end to end.');
+    expect(typeof instructions).toBe('string');
   }, 30000);
 
   it('cleans up the temp directory and generated artifacts after a successful materialization', async () => {
     const result = await runHarness({ manifest: makeValidManifest(), providerStatus: makeProviderStatus() });
 
     expect(result.ok).toBe(true);
-    await expect(fs.access(result.record!.generatedPath)).rejects.toThrow();
+    await expect(fs.access(result.materialized!.record.generatedPath)).rejects.toThrow();
     expect(await listMaterializeTempDirs()).toEqual([]);
   }, 30000);
 
