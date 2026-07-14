@@ -96,3 +96,40 @@ the name and line number changed._
 - **#13 (execution/grading):** build new, working directly from the
   materialized system prompt rather than commons-crew's tool-loop
   orchestration, which is neither exported nor manifest-driven.
+
+## Vendoring mechanism (added by #11)
+
+commons-crew is vendored as a **git submodule** at `vendor/commons-crew`,
+pinned to a specific commit (currently `3df21f187438fb3821d0dc9fb7beca93a61982a9`,
+`origin/main` at the time of vendoring) rather than tracking a branch --
+grading should run against a known, stable version of the parser, not
+whatever happens to be on commons-crew's `main` at run time. Submodule over
+a documented manual-checkout convention: the pin is machine-readable
+(`.gitmodules` + gitlink commit), not just prose a contributor could forget
+to follow. `git submodule update --init` is required after cloning this
+repo. To move the pin: `cd vendor/commons-crew && git fetch && git checkout <commit>`,
+then commit the updated gitlink.
+
+**Import mechanism:** code in this repo does not `import` vendor's
+TypeScript files statically. commons-crew's `packages/*` are `"private": true`
+with `moduleResolution: "Bundler"` and no compiled output -- a static
+import would pull every file transitively reachable from
+`packages/catalog/src/index.ts` (which itself imports `packages/contracts`
+and `packages/config`) into this package's own `tsc` compile graph, which
+enforces `rootDir: "src"` and refuses to build anything outside it
+(verified directly: `tsc` errors `TS6059` on all three files when imported
+statically). Instead, `src/vendor/commons-crew-catalog.ts` loads the
+vendored module via a `require()` call on a path computed at runtime with
+`path.join()` -- opaque to `tsc`'s static resolution, so `npm run build`
+only ever type-checks this package's own hand-declared mirror types
+(`SpecialistManifestContract` etc., copied from
+`packages/contracts/src/index.ts` and kept beside the loader), never
+vendor's tree.
+
+Consequence, verified directly: this only resolves at runtime under a
+TypeScript-aware loader. `npm test` works because ts-jest transforms any
+`.ts` file its runtime `require()` reaches, vendor included. A real,
+non-test invocation of anything that calls `loadVendorCatalogModule()`
+(e.g. issue #14's gate) must run via `tsx`, or with `-r tsx/cjs`
+registered -- confirmed directly that plain `node` cannot resolve a `.ts`
+extension at all (`Cannot find module '...index.ts'`).
