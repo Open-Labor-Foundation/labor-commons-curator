@@ -26,6 +26,7 @@ interface HarnessInput {
   section?: string;
   providerStatus?: ProviderStatus;
   providerFailureMessage?: string;
+  tempDirPrefix?: string;
 }
 
 async function readStdin(): Promise<string> {
@@ -61,7 +62,7 @@ async function main() {
   const provider = buildProvider(input);
 
   try {
-    const materialized = await materialize(input.manifest, { provider, section: input.section });
+    const materialized = await materialize(input.manifest, { provider, section: input.section, tempDirPrefix: input.tempDirPrefix });
     process.stdout.write(JSON.stringify({ ok: true, materialized }));
   } catch (err) {
     process.stdout.write(JSON.stringify({ ok: false, message: (err as Error).message }));

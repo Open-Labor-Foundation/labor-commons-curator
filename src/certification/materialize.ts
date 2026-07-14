@@ -17,6 +17,16 @@ export interface MaterializeDeps {
   provider: ProviderAdapter;
   /** NAICS-overlay section directory name used for the synthetic catalog entry. Defaults to "curator-generated". */
   section?: string;
+  /**
+   * Prefix for the temp directory this call creates. Defaults to
+   * "labor-commons-curator-materialize-". Overridable so callers that need
+   * to assert "no leftover temp dir" (tests) can use a prefix unique to
+   * themselves -- a global os.tmpdir() listing filtered by the default
+   * shared prefix isn't safe to assert on when multiple independent
+   * callers (e.g. concurrently-running test files) use materialize() at
+   * the same time.
+   */
+  tempDirPrefix?: string;
 }
 
 export interface MaterializedContent {
@@ -65,7 +75,7 @@ export interface MaterializedContent {
 export async function materialize(manifest: SpecialistManifestContract, deps: MaterializeDeps): Promise<MaterializedContent> {
   const { createAppServices } = loadVendorCoreModule();
 
-  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'labor-commons-curator-materialize-'));
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), deps.tempDirPrefix ?? 'labor-commons-curator-materialize-'));
   let app: Awaited<ReturnType<typeof createAppServices>> | undefined;
 
   try {
