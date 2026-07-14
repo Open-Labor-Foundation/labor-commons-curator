@@ -61,8 +61,8 @@ async function main() {
   const provider = buildProvider(input);
 
   try {
-    const record = await materialize(input.manifest, { provider, section: input.section });
-    process.stdout.write(JSON.stringify({ ok: true, record }));
+    const materialized = await materialize(input.manifest, { provider, section: input.section });
+    process.stdout.write(JSON.stringify({ ok: true, materialized }));
   } catch (err) {
     process.stdout.write(JSON.stringify({ ok: false, message: (err as Error).message }));
   }

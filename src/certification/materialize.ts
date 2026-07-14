@@ -19,6 +19,21 @@ export interface MaterializeDeps {
   section?: string;
 }
 
+export interface MaterializedContent {
+  /** The real MaterializationRecord returned by commons-crew's materials.create. */
+  record: MaterializationRecord;
+  /**
+   * Contents of generated-specialist/system-prompt.md, read before temp-dir
+   * cleanup -- the real MaterializationRecord only carries generatedPath, a
+   * path that no longer exists by the time this function returns (cleanup
+   * runs in a finally block). null when record.status !== "ready" (the
+   * file was never written).
+   */
+  systemPrompt: string | null;
+  /** Contents of generated-specialist/instructions.md, same caveat as systemPrompt. */
+  instructions: string | null;
+}
+
 /**
  * Materializes a SpecialistManifestContract by driving commons-crew's real
  * materials.create -- not a hand-rolled mirror of it. Since materials.create
@@ -41,9 +56,13 @@ export interface MaterializeDeps {
  * stateFile, backupsRoot) lives under one temp directory, removed in a
  * finally block after calling app.shutdown() -- so a failed or successful
  * call leaves nothing behind, safe to call repeatedly (once per record
- * being certified).
+ * being certified). Because cleanup is unconditional, the generated
+ * system-prompt.md/instructions.md content is read into memory and
+ * returned directly (see MaterializedContent) rather than left for a
+ * caller to read from record.generatedPath, which is already gone by the
+ * time this function returns.
  */
-export async function materialize(manifest: SpecialistManifestContract, deps: MaterializeDeps): Promise<MaterializationRecord> {
+export async function materialize(manifest: SpecialistManifestContract, deps: MaterializeDeps): Promise<MaterializedContent> {
   const { createAppServices } = loadVendorCoreModule();
 
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'labor-commons-curator-materialize-'));
@@ -78,7 +97,17 @@ export async function materialize(manifest: SpecialistManifestContract, deps: Ma
     };
 
     app = await createAppServices(config, { provider: deps.provider });
-    return await app.materials.create(agentCatalogEntryId, null);
+    const record = await app.materials.create(agentCatalogEntryId, null);
+
+    let systemPrompt: string | null = null;
+    let instructions: string | null = null;
+    if (record.status === 'ready') {
+      const generatedArtifactsRoot = path.join(record.generatedPath, 'generated-specialist');
+      systemPrompt = await fs.readFile(path.join(generatedArtifactsRoot, 'system-prompt.md'), 'utf8');
+      instructions = await fs.readFile(path.join(generatedArtifactsRoot, 'instructions.md'), 'utf8');
+    }
+
+    return { record, systemPrompt, instructions };
   } finally {
     if (app) {
       await app.shutdown();
