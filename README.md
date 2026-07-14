@@ -41,3 +41,27 @@ npm test
 schema fresh from labor-commons's `main` branch and regenerate
 `src/schema/specialist-record.ts` from it before running — this repo has no
 published-package dependency on the schema, so both require network access.
+
+## The certification gate, in production
+
+Two real entrypoints, both requiring a TypeScript-aware runtime (`tsx` --
+see `docs/commons-crew-integration.md`) and `CERTIFY_PROVIDER_BASE_URL` /
+`CERTIFY_PROVIDER_API_KEY` / `CERTIFY_PROVIDER_MODEL` (an
+OpenAI-chat-completions-compatible endpoint) as environment variables:
+
+- **`npm run certify-record -- <spec.yaml path>`** — the publish gate.
+  Wired into [labor-commons](https://github.com/Open-Labor-Foundation/labor-commons)'s
+  own CI: a PR there that sets a record's `metadata.status` to `published`
+  runs this and fails the check if the record doesn't pass.
+- **`npm run backfill-sweep -- <catalog root> [--limit N] [--out path]`** —
+  retroactively certifies records that predate the gate. Runs on a weekly
+  schedule (`.github/workflows/backfill-sweep.yml`, also
+  manually triggerable), against a bounded batch (`--limit`, default 30)
+  prioritizing never-certified records — the full catalog isn't practical
+  to run in one pass. Report-only: writes a JSON artifact, never mutates
+  the catalog itself.
+
+Both are non-blocking without the secrets configured (a visible warning,
+not a failure) — add them as repository secrets on this repo (for the
+backfill sweep) and on labor-commons (for the publish gate) to make either
+one actually enforce.

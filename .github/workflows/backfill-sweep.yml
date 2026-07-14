@@ -1,0 +1,61 @@
+name: Backfill certification sweep
+
+on:
+  schedule:
+    # Weekly, Monday 06:00 UTC. Bounded by --limit below -- see
+    # backfill-sweep-cli.ts's header comment for why the full catalog
+    # (900+ records, each several LLM calls plus a real materialization)
+    # isn't run in one pass.
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: 'Max records to certify this run (default 30)'
+        required: false
+        default: '30'
+
+jobs:
+  backfill-sweep:
+    name: Backfill certification sweep
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout labor-commons-curator
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          submodules: true
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Checkout labor-commons (read-only, for its catalog)
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          repository: Open-Labor-Foundation/labor-commons
+          path: labor-commons
+
+      - name: Run backfill sweep
+        env:
+          CERTIFY_PROVIDER_BASE_URL: ${{ secrets.CERTIFY_PROVIDER_BASE_URL }}
+          CERTIFY_PROVIDER_API_KEY: ${{ secrets.CERTIFY_PROVIDER_API_KEY }}
+          CERTIFY_PROVIDER_MODEL: ${{ secrets.CERTIFY_PROVIDER_MODEL }}
+          LIMIT: ${{ github.event.inputs.limit || '30' }}
+        run: |
+          if [ -z "$CERTIFY_PROVIDER_API_KEY" ]; then
+            echo "::warning::CERTIFY_PROVIDER_API_KEY is not configured as a repository secret -- the backfill sweep cannot run. Configure CERTIFY_PROVIDER_BASE_URL/CERTIFY_PROVIDER_API_KEY/CERTIFY_PROVIDER_MODEL as repo secrets to enable it."
+            exit 0
+          fi
+          npm run backfill-sweep -- "$GITHUB_WORKSPACE/labor-commons" --limit "$LIMIT" --out backfill-report.json
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backfill-sweep-report
+          path: backfill-report.json
+          if-no-files-found: ignore
+          retention-days: 90

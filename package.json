@@ -12,7 +12,8 @@
     "build": "tsc",
     "pretest": "npm run generate-schema",
     "test": "jest",
-    "certify-record": "tsx src/certification/certify-record-cli.ts"
+    "certify-record": "tsx src/certification/certify-record-cli.ts",
+    "backfill-sweep": "tsx src/certification/backfill-sweep-cli.ts"
   },
   "devDependencies": {
     "@types/jest": "^29.5.12",
