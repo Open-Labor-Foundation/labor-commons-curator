@@ -74,14 +74,26 @@ function makeProviderStatus(): ProviderStatus {
   };
 }
 
+// Jest runs spec files in parallel by default, and other files
+// (backfill-sweep-cli.spec.ts, certify-for-publish.spec.ts, etc.) also
+// drive real materialize() calls under materialize.ts's *default* temp-dir
+// prefix -- a global os.tmpdir() listing filtered by that shared default
+// isn't safe to assert on ("no leftover dirs") when another file's
+// concurrently-running test creates or cleans up its own dir at the same
+// moment (confirmed directly: this raced and failed intermittently in both
+// directions before this fix). This file uses its own private prefix, via
+// materialize()'s tempDirPrefix override, so its temp-dir listing can never
+// see another file's dirs regardless of what runs concurrently.
+const TEMP_DIR_PREFIX = 'labor-commons-curator-materialize-spec-own-';
+
 async function listMaterializeTempDirs(): Promise<string[]> {
   const entries = await fs.readdir(os.tmpdir());
-  return entries.filter((name) => name.startsWith('labor-commons-curator-materialize-'));
+  return entries.filter((name) => name.startsWith(TEMP_DIR_PREFIX));
 }
 
 describe('materialize (real end-to-end, via tsx subprocess)', () => {
   it('drives the real materials.create end to end and returns a genuine MaterializationRecord plus real generated content', async () => {
-    const result = await runHarness({ manifest: makeValidManifest(), providerStatus: makeProviderStatus() });
+    const result = await runHarness({ manifest: makeValidManifest(), providerStatus: makeProviderStatus(), tempDirPrefix: TEMP_DIR_PREFIX });
 
     expect(result.ok).toBe(true);
     const { record, systemPrompt, instructions } = result.materialized!;
@@ -100,7 +112,7 @@ describe('materialize (real end-to-end, via tsx subprocess)', () => {
   }, 30000);
 
   it('cleans up the temp directory and generated artifacts after a successful materialization', async () => {
-    const result = await runHarness({ manifest: makeValidManifest(), providerStatus: makeProviderStatus() });
+    const result = await runHarness({ manifest: makeValidManifest(), providerStatus: makeProviderStatus(), tempDirPrefix: TEMP_DIR_PREFIX });
 
     expect(result.ok).toBe(true);
     await expect(fs.access(result.materialized!.record.generatedPath)).rejects.toThrow();
@@ -111,6 +123,7 @@ describe('materialize (real end-to-end, via tsx subprocess)', () => {
     const result = await runHarness({
       manifest: makeValidManifest(),
       providerFailureMessage: 'simulated provider startup failure',
+      tempDirPrefix: TEMP_DIR_PREFIX,
     });
 
     expect(result.ok).toBe(false);
