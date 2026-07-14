@@ -11,6 +11,14 @@ catalog. See `docs/` for the full product/architecture/data-model design.
 
 ## Development
 
+Check out the commons-crew submodule (vendored for real reuse of its
+manifest parser and materialization -- see
+`docs/commons-crew-integration.md`):
+
+```
+git submodule update --init
+```
+
 Install dependencies:
 
 ```

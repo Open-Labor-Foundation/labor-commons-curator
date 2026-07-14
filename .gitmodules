@@ -1,0 +1,3 @@
+[submodule "vendor/commons-crew"]
+	path = vendor/commons-crew
+	url = https://github.com/Open-Labor-Foundation/commons-crew.git
