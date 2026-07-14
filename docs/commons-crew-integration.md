@@ -127,9 +127,53 @@ only ever type-checks this package's own hand-declared mirror types
 vendor's tree.
 
 Consequence, verified directly: this only resolves at runtime under a
-TypeScript-aware loader. `npm test` works because ts-jest transforms any
-`.ts` file its runtime `require()` reaches, vendor included. A real,
-non-test invocation of anything that calls `loadVendorCatalogModule()`
-(e.g. issue #14's gate) must run via `tsx`, or with `-r tsx/cjs`
-registered -- confirmed directly that plain `node` cannot resolve a `.ts`
-extension at all (`Cannot find module '...index.ts'`).
+TypeScript-aware loader. `npm test` works for `packages/catalog` (#11)
+because ts-jest transforms any `.ts` file its runtime `require()` reaches,
+vendor included. A real, non-test invocation of anything that calls
+`loadVendorCatalogModule()` (e.g. issue #14's gate) must run via `tsx`, or
+with `-r tsx/cjs` registered -- confirmed directly that plain `node` cannot
+resolve a `.ts` extension at all (`Cannot find module '...index.ts'`).
+
+## `packages/core` needs a real `tsx` subprocess, not just ts-jest (added by #12)
+
+`packages/core`'s dependency chain is not ts-jest-transformable the way
+`packages/catalog` is. `packages/config/src/index.ts:259` uses
+`import.meta.url` to resolve its own repo root when not given one
+explicitly. ts-jest always coerces the effective `module` compiler option
+to CommonJS for compatibility with Jest's own CJS runtime -- confirmed
+directly by reading `ts-jest`'s own `_transpileOutput` -- and `import.meta`
+cannot be transpiled to CommonJS at all (`TS1343`), regardless of any
+per-file transform override attempted (tried both a project-wide
+`module: "ESNext"` and a `vendor/commons-crew/**` -specific
+`isolatedModules` transform pattern; neither survives ts-jest's own
+CJS-mode fixup). This is a genuine Jest/CJS vs. commons-crew/ESM conflict,
+not a configuration mistake to work around.
+
+The fix is not a workaround -- it's using the real, already-documented
+invocation mechanism. `src/certification/materialize-harness.ts` is a
+small script that imports the real `materialize.ts` unmodified and is run
+only via a real `tsx` child process
+(`node_modules/.bin/tsx materialize-harness.ts`, JSON in over stdin, JSON
+out over stdout); `materialize.spec.ts` spawns it rather than importing
+`materialize.ts` directly. Confirmed directly that the exact same
+`materialize.ts`, unmodified, runs successfully end-to-end under `tsx`
+(driving the real `materials.create`) while failing under Jest for the
+reason above -- this is arguably a *more* faithful test than an in-process
+Jest call would have been, since any real (non-test) invocation already
+has to run under `tsx` for the same reason.
+
+**Also needed:** `pg` and `pg-mem` as this repo's own devDependencies,
+matching commons-crew's versions (`^8.16.3` / `^3.0.14`). `postgres-store.ts`
+imports both unconditionally at module load even though materialization
+only ever exercises `storage.mode: "memory"` (`JsonStateStore`, not
+`PostgresStateStore`) -- the import is static, so it's evaluated
+regardless of which storage backend actually runs. Node resolves these
+bare imports by walking up from the importing file's directory; since the
+submodule has no `node_modules` of its own (only `git submodule add`, no
+`npm install` inside `vendor/commons-crew`), resolution lands on this
+repo's own `node_modules`.
+
+**Bottom line for #13 (execution/grading):** it will hit the same
+`packages/core` constraint (grading needs the materialized bundle, which
+needs `materials.create`). Plan on the same `tsx`-subprocess-harness
+pattern from the start rather than rediscovering this.
