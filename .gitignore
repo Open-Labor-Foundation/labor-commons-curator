@@ -4,3 +4,9 @@ dist/
 .env
 .env.local
 coverage/
+
+# Pulled fresh from labor-commons and regenerated on every `npm run build` /
+# `npm test` (see scripts/pull-schema.js, scripts/generate-types.js) --
+# never commit these.
+src/schema/specialist-record.schema.json
+src/schema/specialist-record.ts

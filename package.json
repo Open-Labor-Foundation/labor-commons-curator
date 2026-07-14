@@ -1,13 +1,23 @@
 {
   "name": "project-scaffold",
   "version": "1.0.0",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
+    "pull-schema": "node scripts/pull-schema.js",
+    "generate-types": "node scripts/generate-types.js",
+    "generate-schema": "npm run pull-schema && npm run generate-types",
+    "prebuild": "npm run generate-schema",
     "build": "tsc",
+    "pretest": "npm run generate-schema",
     "test": "jest"
   },
   "devDependencies": {
     "@types/jest": "^29.5.12",
+    "@types/node": "^20.11.0",
     "jest": "^29.7.0",
+    "json-schema-to-typescript": "^15.0.4",
     "ts-jest": "^29.1.1",
     "typescript": "^5.3.3"
   }

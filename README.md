@@ -28,3 +28,8 @@ Run tests:
 ```
 npm test
 ```
+
+`npm run build` and `npm test` both pull the canonical `SpecialistRecord`
+schema fresh from labor-commons's `main` branch and regenerate
+`src/schema/specialist-record.ts` from it before running — this repo has no
+published-package dependency on the schema, so both require network access.
