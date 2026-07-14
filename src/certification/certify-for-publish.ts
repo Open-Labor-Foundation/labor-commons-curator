@@ -21,13 +21,19 @@ export interface CertifyForPublishDeps {
   judge: LlmClient;
   /** Identifier for the grading pass, distinct from authoring and scenario-generation. */
   gradedBy: string;
+  /**
+   * pre_publish_gate (default) or backfill_sweep -- see CertificationResult.origin.
+   * Same pipeline either way; #15's backfill sweep passes "backfill_sweep"
+   * explicitly rather than duplicating this function.
+   */
+  origin?: CertificationResult['origin'];
 }
 
 /**
  * The real publish gate described in docs/api.md's Publish operation:
  * scenario-generation (#9), then manifest conversion (#11) + materialization
  * (#12) + execution/grading (#13) in sequence, producing a
- * CertificationResult with origin: "pre_publish_gate".
+ * CertificationResult with origin: "pre_publish_gate" by default.
  *
  * Does not mutate record.metadata.status itself -- returns the result for
  * a future publish-flow (not part of this train) to act on. If
@@ -46,6 +52,6 @@ export async function certifyForPublish(record: SpecialistRecord, deps: CertifyF
     llm: deps.llm,
     judge: deps.judge,
     gradedBy: deps.gradedBy,
-    origin: 'pre_publish_gate',
+    origin: deps.origin ?? 'pre_publish_gate',
   });
 }
