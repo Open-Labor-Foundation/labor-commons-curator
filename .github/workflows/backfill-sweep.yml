@@ -14,6 +14,10 @@ on:
         required: false
         default: '30'
 
+# Only reads both repos and uploads a run artifact -- no commits/pushes.
+permissions:
+  contents: read
+
 jobs:
   backfill-sweep:
     name: Backfill certification sweep
