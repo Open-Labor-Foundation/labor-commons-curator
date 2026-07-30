@@ -13,7 +13,8 @@
     "pretest": "npm run generate-schema",
     "test": "jest",
     "certify-record": "tsx src/certification/certify-record-cli.ts",
-    "backfill-sweep": "tsx src/certification/backfill-sweep-cli.ts"
+    "backfill-sweep": "tsx src/certification/backfill-sweep-cli.ts",
+    "check:submodule-drift": "node scripts/check-submodule-drift.js"
   },
   "devDependencies": {
     "@types/jest": "^29.5.12",
