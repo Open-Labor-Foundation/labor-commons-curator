@@ -34,4 +34,6 @@ jobs:
         run: npm test
 
       - name: Check commons-crew submodule drift
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm run check:submodule-drift
